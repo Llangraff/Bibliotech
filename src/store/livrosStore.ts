@@ -52,9 +52,11 @@ export const useLivrosStore = create<LivrosState>((set, get) => ({
         imagemUrl = await getDownloadURL(storageRef);
       }
 
+      // Adiciona o campo quantidadeDisponivel igual à quantidadeTotal inicialmente
       await addDoc(collection(db, 'livros'), {
         ...livro,
         imagemUrl,
+        quantidadeDisponivel: livro.quantidadeTotal,
         dataCadastro: new Date()
       });
       
@@ -74,6 +76,7 @@ export const useLivrosStore = create<LivrosState>((set, get) => ({
         imagemUrl = await getDownloadURL(storageRef);
       }
 
+      // Certifique-se de atualizar a quantidadeDisponivel se necessário
       await updateDoc(doc(db, 'livros', id), {
         ...livro,
         imagemUrl,

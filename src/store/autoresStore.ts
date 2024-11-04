@@ -7,7 +7,7 @@ import {
   updateDoc,
   deleteDoc,
   query,
-  orderBy
+  orderBy 
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, Autor } from '../lib/firebase';
@@ -17,7 +17,7 @@ interface AutoresState {
   autores: Autor[];
   loading: boolean;
   fetchAutores: () => Promise<void>;
-  addAutor: (autor: Omit<Autor, 'id'>, imagem?: File) => Promise<void>;
+  addAutor: (autor: Omit<Autor, 'id' | 'imagemUrl'>, imagem?: File) => Promise<void>;
   updateAutor: (id: string, autor: Partial<Autor>, imagem?: File) => Promise<void>;
   deleteAutor: (id: string) => Promise<void>;
 }
@@ -25,6 +25,7 @@ interface AutoresState {
 export const useAutoresStore = create<AutoresState>((set, get) => ({
   autores: [],
   loading: false,
+  
   fetchAutores: async () => {
     set({ loading: true });
     try {
@@ -42,6 +43,7 @@ export const useAutoresStore = create<AutoresState>((set, get) => ({
       set({ loading: false });
     }
   },
+  
   addAutor: async (autor, imagem) => {
     try {
       let imagemUrl = '';
@@ -56,7 +58,7 @@ export const useAutoresStore = create<AutoresState>((set, get) => ({
         imagemUrl,
         dataCadastro: new Date()
       });
-      
+
       toast.success('Autor adicionado com sucesso!');
       get().fetchAutores();
     } catch (error: any) {
@@ -64,9 +66,10 @@ export const useAutoresStore = create<AutoresState>((set, get) => ({
       throw error;
     }
   },
+  
   updateAutor: async (id, autor, imagem) => {
     try {
-      let imagemUrl = autor.imagemUrl;
+      let imagemUrl = autor.imagemUrl || '';
       if (imagem) {
         const storageRef = ref(storage, `autores/${imagem.name}`);
         await uploadBytes(storageRef, imagem);
@@ -86,6 +89,7 @@ export const useAutoresStore = create<AutoresState>((set, get) => ({
       throw error;
     }
   },
+  
   deleteAutor: async (id) => {
     try {
       await deleteDoc(doc(db, 'autores', id));

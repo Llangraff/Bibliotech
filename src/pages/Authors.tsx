@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, BookOpen, X } from 'lucide-react';
 import { useAutoresStore } from '../store/autoresStore';
+import { useLivrosStore } from '../store/livrosStore';
 import toast from 'react-hot-toast';
 
 function Authors() {
@@ -8,6 +9,7 @@ function Authors() {
   const [editingAuthor, setEditingAuthor] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { autores, loading, fetchAutores, addAutor, updateAutor, deleteAutor } = useAutoresStore();
+  const { livros, fetchLivros } = useLivrosStore();
   const [formData, setFormData] = useState({
     nome: '',
     nacionalidade: '',
@@ -15,10 +17,31 @@ function Authors() {
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [livrosCount, setLivrosCount] = useState<{ [key: string]: number }>({});
+  const [autorNomeSelecionado, setAutorNomeSelecionado] = useState('');
+  const [autorQuery, setAutorQuery] = useState('');
+  const [filteredAutores, setFilteredAutores] = useState([]);
 
   useEffect(() => {
     fetchAutores();
-  }, [fetchAutores]);
+    fetchLivros();
+  }, [fetchAutores, fetchLivros]);
+
+  useEffect(() => {
+    const count = livros.reduce((acc: { [key: string]: number }, livro) => {
+      acc[livro.autorId] = (acc[livro.autorId] || 0) + 1;
+      return acc;
+    }, {});
+    setLivrosCount(count);
+  }, [livros]);
+
+  useEffect(() => {
+    setFilteredAutores(
+      autores.filter((autor) =>
+        autor.nome.toLowerCase().includes(autorQuery.toLowerCase())
+      )
+    );
+  }, [autorQuery, autores]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,6 +89,12 @@ function Authors() {
     }
   };
 
+  const handleAutorSelect = (autorId: string, autorNome: string) => {
+    setFormData({ ...formData, autorId });
+    setAutorNomeSelecionado(autorNome);
+    setAutorQuery('');
+  };
+
   const resetForm = () => {
     setFormData({
       nome: '',
@@ -75,6 +104,7 @@ function Authors() {
     setImageFile(null);
     setImagePreview('');
     setEditingAuthor(null);
+    setAutorNomeSelecionado('');
   };
 
   const filteredAuthors = autores.filter(author =>
@@ -147,7 +177,7 @@ function Authors() {
                     <Edit2 className="h-5 w-5" />
                   </button>
                   <button
-                    onClick={() => handleDelete(author.id!)}
+                    onClick={() => author.id ? handleDelete(author.id) : console.error('ID do autor está indefinido')}
                     className="text-red-600 hover:text-red-900"
                   >
                     <Trash2 className="h-5 w-5" />
@@ -161,7 +191,13 @@ function Authors() {
 
               <div className="flex items-center gap-2 text-gray-600">
                 <BookOpen className="h-5 w-5" />
-                <span className="text-sm">12 Livros Publicados</span>
+                {author.id && livrosCount[author.id] !== undefined ? (
+                  livrosCount[author.id] === 1
+                    ? '1 Livro Publicado'
+                    : `${livrosCount[author.id]} Livros Publicados`
+                ) : (
+                  'Nenhum livro publicado'
+                )}
               </div>
             </div>
           ))}
@@ -185,7 +221,7 @@ function Authors() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Nome</label>
@@ -197,7 +233,7 @@ function Authors() {
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700">Nacionalidade</label>
                 <input
@@ -208,7 +244,7 @@ function Authors() {
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700">Biografia</label>
                 <textarea
@@ -238,7 +274,7 @@ function Authors() {
                   />
                 </div>
               </div>
-              
+
               <div className="flex justify-end gap-2">
                 <button
                   type="button"

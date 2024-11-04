@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, X } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Loader } from 'lucide-react';
 import { useUsuariosStore } from '../store/usuariosStore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import toast from 'react-hot-toast';
+
+interface UsuarioForm {
+  nome: string;
+  email: string;
+  tipo: 'usuario' | 'admin';
+  status: 'ativo' | 'inativo';
+}
 
 function Users() {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { usuarios, loading, fetchUsuarios, addUsuario, updateUsuario, deleteUsuario } = useUsuariosStore();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<UsuarioForm>({
     nome: '',
     email: '',
     tipo: 'usuario',
@@ -22,18 +30,26 @@ function Users() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.nome || !formData.email) {
+      toast.error('Todos os campos são obrigatórios.');
+      return;
+    }
+
     try {
       if (editingUser) {
         await updateUsuario(editingUser.id, formData);
+        toast.success('Usuário atualizado com sucesso!');
       } else {
         await addUsuario({
           ...formData,
           dataCadastro: new Date()
         });
+        toast.success('Usuário adicionado com sucesso!');
       }
       setShowModal(false);
       resetForm();
     } catch (error) {
+      toast.error('Erro ao salvar usuário. Verifique os dados e tente novamente.');
       console.error('Erro ao salvar usuário:', error);
     }
   };
@@ -51,7 +67,13 @@ function Users() {
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
-      await deleteUsuario(id);
+      try {
+        await deleteUsuario(id);
+        toast.success('Usuário excluído com sucesso!');
+      } catch (error) {
+        toast.error('Erro ao excluir usuário.');
+        console.error('Erro ao excluir usuário:', error);
+      }
     }
   };
 
@@ -116,9 +138,7 @@ function Users() {
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-4 text-center">
-                    <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                    </div>
+                    <Loader className="animate-spin h-8 w-8 text-indigo-600" />
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
@@ -160,7 +180,7 @@ function Users() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {format(user.dataCadastro, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                      {user.dataCadastro ? format(new Date(user.dataCadastro), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex gap-2">
@@ -171,7 +191,7 @@ function Users() {
                           <Edit2 className="h-5 w-5" />
                         </button>
                         <button
-                          onClick={() => handleDelete(user.id!)}
+                          onClick={() => user.id && handleDelete(user.id)}
                           className="text-red-600 hover:text-red-900"
                         >
                           <Trash2 className="h-5 w-5" />
@@ -231,7 +251,7 @@ function Users() {
                 <label className="block text-sm font-medium text-gray-700">Tipo</label>
                 <select
                   value={formData.tipo}
-                  onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, tipo: e.target.value as 'usuario' | 'admin' })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 >
                   <option value="usuario">Usuário</option>
@@ -243,7 +263,7 @@ function Users() {
                 <label className="block text-sm font-medium text-gray-700">Status</label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'ativo' | 'inativo' })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 >
                   <option value="ativo">Ativo</option>
