@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BookOpen, Users, PenTool, CalendarClock } from 'lucide-react';
 import { useLivrosStore } from '../store/livrosStore';
 import { useUsuariosStore } from '../store/usuariosStore';
 import { useAutoresStore } from '../store/autoresStore';
 import { useEmprestimosStore } from '../store/emprestimosStore';
 import { formatDistanceToNow } from 'date-fns';
-import ptBR from 'date-fns/locale/pt-BR';
+import { ptBR } from 'date-fns/locale';
 
 function StatCard({ icon: Icon, title, value, change }: { icon: any, title: string, value: string, change: string }) {
+  const isPositiveChange = parseFloat(change) > 0;
+
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm">
       <div className="flex items-center justify-between">
@@ -19,7 +21,7 @@ function StatCard({ icon: Icon, title, value, change }: { icon: any, title: stri
           <Icon className="h-6 w-6 text-indigo-600" />
         </div>
       </div>
-      <p className="text-sm text-green-600 mt-4">{change}</p>
+      <p className={`text-sm mt-4 ${isPositiveChange ? 'text-green-600' : 'text-red-600'}`}>{change}</p>
     </div>
   );
 }
@@ -30,7 +32,7 @@ function Dashboard() {
   const { autores, fetchAutores } = useAutoresStore();
   const { emprestimos, fetchEmprestimos } = useEmprestimosStore();
 
-  const [previousData, setPreviousData] = useState({
+  const [previousData] = useState({
     livros: 2200,
     usuarios: 1200,
     autores: 150,
@@ -121,7 +123,7 @@ function Dashboard() {
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Livros Populares</h2>
           <div className="space-y-4">
             {livros
-              .sort((a, b) => (livroEmprestimosContagem[b.id] || 0) - (livroEmprestimosContagem[a.id] || 0))
+              .sort((a, b) => (livroEmprestimosContagem[b.id ?? ''] || 0) - (livroEmprestimosContagem[a.id ?? ''] || 0))
               .slice(0, 4)
               .map((livro, i) => (
                 <div key={i} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
@@ -132,7 +134,7 @@ function Dashboard() {
                   />
                   <div>
                     <p className="font-medium">{livro.titulo}</p>
-                    <p className="text-sm text-gray-500">Emprestado {livroEmprestimosContagem[livro.id] || 0} vezes</p>
+                    <p className="text-sm text-gray-500">Emprestado {livroEmprestimosContagem[livro.id ?? ''] || 0} vezes</p>
                   </div>
                 </div>
               ))}

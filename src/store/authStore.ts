@@ -25,26 +25,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   userData: null,
   loading: true,
+
   signIn: async (email, password) => {
+    set({ loading: true });
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const userData = await getDoc(doc(db, 'usuarios', userCredential.user.uid));
-      set({ userData: userData.data() });
+      set({ user: userCredential.user, userData: userData.data(), loading: false });
     } catch (error: any) {
+      set({ loading: false });
       toast.error('Erro ao fazer login: ' + error.message);
       throw error;
     }
   },
+
   signOut: async () => {
+    set({ loading: true });
     try {
       await firebaseSignOut(auth);
-      set({ user: null, userData: null });
+      set({ user: null, userData: null, loading: false });
     } catch (error: any) {
+      set({ loading: false });
       toast.error('Erro ao fazer logout: ' + error.message);
       throw error;
     }
   },
+
   signUp: async (nome, email, password, tipo = 'usuario') => {
+    set({ loading: true });
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: nome });
@@ -58,12 +66,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       };
 
       await setDoc(doc(db, 'usuarios', userCredential.user.uid), userData);
-      set({ userData });
+      set({ user: userCredential.user, userData, loading: false });
     } catch (error: any) {
+      set({ loading: false });
       toast.error('Erro ao criar conta: ' + error.message);
       throw error;
     }
   },
+
   updateUserData: async () => {
     const { user } = get();
     if (user) {

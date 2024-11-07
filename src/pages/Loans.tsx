@@ -43,6 +43,7 @@ function Loans() {
         livroId: livroSelecionado,
         usuarioId: usuarioSelecionado,
         dataDevolucaoPrevista: new Date(dataDevolucao),
+        dataEmprestimo: new Date(), // Adiciona a data do empréstimo atual
         status: 'ativo'
       });
       setShowModal(false);
@@ -62,15 +63,19 @@ function Loans() {
     setUsuarioQuery('');
   };
 
-  const handleLivroSelect = (id: string, titulo: string) => {
-    setLivroSelecionado(id);
-    setLivroNomeSelecionado(titulo);
+  const handleLivroSelect = (id: string | undefined, titulo: string | undefined) => {
+    if (id && titulo) {
+      setLivroSelecionado(id);
+      setLivroNomeSelecionado(titulo);
+    }
     setLivroQuery('');
   };
-
-  const handleUsuarioSelect = (id: string, nome: string) => {
-    setUsuarioSelecionado(id);
-    setUsuarioNomeSelecionado(nome);
+  
+  const handleUsuarioSelect = (id: string | undefined, nome: string | undefined) => {
+    if (id && nome) {
+      setUsuarioSelecionado(id);
+      setUsuarioNomeSelecionado(nome);
+    }
     setUsuarioQuery('');
   };
 

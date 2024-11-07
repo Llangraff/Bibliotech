@@ -1,8 +1,21 @@
 import React from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
-import { Library, BookOpen, Users, PenTool, CalendarClock, LayoutDashboard } from 'lucide-react';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Library, BookOpen, Users, PenTool, CalendarClock, LayoutDashboard, LogOut } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
 
 function Layout() {
+  const navigate = useNavigate();
+  const { signOut } = useAuthStore(); // Altere de logout para signOut
+
+  const handleLogout = async () => {
+    try {
+      await signOut(); // Chama signOut para sair
+      navigate('/login'); // Redireciona para a página de login
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       <aside className="w-64 bg-white shadow-lg">
@@ -53,6 +66,14 @@ function Layout() {
             <CalendarClock className="h-5 w-5" />
             Empréstimos
           </NavLink>
+          {/* Botão de Logout */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 p-2 w-full text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <LogOut className="h-5 w-5" />
+            Sair
+          </button>
         </nav>
       </aside>
 
