@@ -5,12 +5,12 @@ import {
   getDocs,
   addDoc,
   updateDoc,
+  deleteDoc,
   query,
-  where,
   orderBy,
-  Timestamp
+  where
 } from 'firebase/firestore';
-import { db, Emprestimo, Livro } from '../lib/firebase';
+import { db, Emprestimo } from '../lib/firebase';
 import { useLivrosStore } from './livrosStore';
 import toast from 'react-hot-toast';
 
@@ -18,14 +18,16 @@ interface EmprestimosState {
   emprestimos: Emprestimo[];
   loading: boolean;
   fetchEmprestimos: () => Promise<void>;
-  realizarEmprestimo: (livroId: string, usuarioId: string, dataDevolucaoPrevista: Date) => Promise<void>;
-  realizarDevolucao: (emprestimoId: string) => Promise<void>;
-  cancelarEmprestimo: (emprestimoId: string) => Promise<void>;
+  addEmprestimo: (emprestimo: Omit<Emprestimo, 'id'>) => Promise<void>;
+  updateEmprestimo: (id: string, emprestimo: Partial<Emprestimo>) => Promise<void>;
+  deleteEmprestimo: (id: string) => Promise<void>;
+  devolverLivro: (emprestimoId: string) => Promise<void>;
 }
 
 export const useEmprestimosStore = create<EmprestimosState>((set, get) => ({
   emprestimos: [],
   loading: false,
+
   fetchEmprestimos: async () => {
     set({ loading: true });
     try {
@@ -46,99 +48,122 @@ export const useEmprestimosStore = create<EmprestimosState>((set, get) => ({
       set({ loading: false });
     }
   },
-  realizarEmprestimo: async (livroId, usuarioId, dataDevolucaoPrevista) => {
+
+  addEmprestimo: async (emprestimo) => {
     try {
       // Verifica disponibilidade do livro
-      const livroRef = doc(db, 'livros', livroId);
-      const livroDoc = await livroRef.get();
-      const livro = livroDoc.data() as Livro;
-
-      if (livro.quantidadeDisponivel <= 0) {
-        throw new Error('Livro não disponível para empréstimo');
+      const livrosStore = useLivrosStore.getState();
+      const livro = livrosStore.livros.find(l => l.id === emprestimo.livroId);
+      
+      if (!livro) {
+        throw new Error('Livro não encontrado');
       }
 
-      // Cria o empréstimo
-      const novoEmprestimo = {
-        livroId,
-        usuarioId,
-        dataEmprestimo: new Date(),
-        dataDevolucaoPrevista,
-        status: 'ativo'
-      };
+      if (livro.quantidadeDisponivel <= 0) {
+        throw new Error('Não há exemplares disponíveis para empréstimo');
+      }
 
-      await addDoc(collection(db, 'emprestimos'), novoEmprestimo);
+      // Verifica se o usuário já tem empréstimos ativos do mesmo livro
+      const emprestimosAtivos = get().emprestimos.filter(e => 
+        e.usuarioId === emprestimo.usuarioId && 
+        e.livroId === emprestimo.livroId && 
+        e.status === 'ativo'
+      );
+
+      if (emprestimosAtivos.length > 0) {
+        throw new Error('Usuário já possui um empréstimo ativo deste livro');
+      }
 
       // Atualiza a quantidade disponível do livro
-      await updateDoc(livroRef, {
+      await updateDoc(doc(db, 'livros', livro.id), {
         quantidadeDisponivel: livro.quantidadeDisponivel - 1,
         status: livro.quantidadeDisponivel - 1 === 0 ? 'emprestado' : 'disponível'
       });
 
+      // Cria o empréstimo
+      await addDoc(collection(db, 'emprestimos'), {
+        ...emprestimo,
+        status: 'ativo',
+        dataEmprestimo: new Date()
+      });
+
       toast.success('Empréstimo realizado com sucesso!');
+      await livrosStore.fetchLivros();
       get().fetchEmprestimos();
-      useLivrosStore.getState().fetchLivros();
     } catch (error: any) {
-      toast.error('Erro ao realizar empréstimo: ' + error.message);
+      toast.error(error.message);
       throw error;
     }
   },
-  realizarDevolucao: async (emprestimoId) => {
+
+  updateEmprestimo: async (id, emprestimo) => {
     try {
-      const emprestimoRef = doc(db, 'emprestimos', emprestimoId);
-      const emprestimoDoc = await emprestimoRef.get();
-      const emprestimo = emprestimoDoc.data() as Emprestimo;
+      await updateDoc(doc(db, 'emprestimos', id), {
+        ...emprestimo,
+        dataAtualizacao: new Date()
+      });
+      toast.success('Empréstimo atualizado com sucesso!');
+      get().fetchEmprestimos();
+    } catch (error: any) {
+      toast.error('Erro ao atualizar empréstimo: ' + error.message);
+      throw error;
+    }
+  },
+
+  deleteEmprestimo: async (id) => {
+    try {
+      const emprestimo = get().emprestimos.find(e => e.id === id);
+      if (!emprestimo) throw new Error('Empréstimo não encontrado');
+
+      if (emprestimo.status === 'ativo') {
+        const livrosStore = useLivrosStore.getState();
+        const livro = livrosStore.livros.find(l => l.id === emprestimo.livroId);
+        
+        if (livro) {
+          await updateDoc(doc(db, 'livros', livro.id), {
+            quantidadeDisponivel: livro.quantidadeDisponivel + 1,
+            status: 'disponível'
+          });
+        }
+      }
+
+      await deleteDoc(doc(db, 'emprestimos', id));
+      toast.success('Empréstimo removido com sucesso!');
+      await useLivrosStore.getState().fetchLivros();
+      get().fetchEmprestimos();
+    } catch (error: any) {
+      toast.error('Erro ao remover empréstimo: ' + error.message);
+      throw error;
+    }
+  },
+
+  devolverLivro: async (emprestimoId) => {
+    try {
+      const emprestimo = get().emprestimos.find(e => e.id === emprestimoId);
+      if (!emprestimo) throw new Error('Empréstimo não encontrado');
+
+      const livrosStore = useLivrosStore.getState();
+      const livro = livrosStore.livros.find(l => l.id === emprestimo.livroId);
+      
+      if (!livro) throw new Error('Livro não encontrado');
 
       // Atualiza o empréstimo
-      await updateDoc(emprestimoRef, {
+      await updateDoc(doc(db, 'emprestimos', emprestimoId), {
         status: 'devolvido',
         dataDevolucaoEfetiva: new Date()
       });
 
-      // Atualiza a quantidade disponível do livro
-      const livroRef = doc(db, 'livros', emprestimo.livroId);
-      const livroDoc = await livroRef.get();
-      const livro = livroDoc.data() as Livro;
-
-      await updateDoc(livroRef, {
+      // Atualiza o livro
+      await updateDoc(doc(db, 'livros', livro.id), {
         quantidadeDisponivel: livro.quantidadeDisponivel + 1,
         status: 'disponível'
       });
 
-      toast.success('Devolução realizada com sucesso!');
+      toast.success('Livro devolvido com sucesso!');
+      await livrosStore.fetchLivros();
       get().fetchEmprestimos();
-      useLivrosStore.getState().fetchLivros();
     } catch (error: any) {
-      toast.error('Erro ao realizar devolução: ' + error.message);
-      throw error;
-    }
-  },
-  cancelarEmprestimo: async (emprestimoId) => {
-    try {
-      const emprestimoRef = doc(db, 'emprestimos', emprestimoId);
-      const emprestimoDoc = await emprestimoRef.get();
-      const emprestimo = emprestimoDoc.data() as Emprestimo;
-
-      // Atualiza o empréstimo
-      await updateDoc(emprestimoRef, {
-        status: 'cancelado',
-        dataDevolucaoEfetiva: new Date()
-      });
-
-      // Atualiza a quantidade disponível do livro
-      const livroRef = doc(db, 'livros', emprestimo.livroId);
-      const livroDoc = await livroRef.get();
-      const livro = livroDoc.data() as Livro;
-
-      await updateDoc(livroRef, {
-        quantidadeDisponivel: livro.quantidadeDisponivel + 1,
-        status: 'disponível'
-      });
-
-      toast.success('Empréstimo cancelado com sucesso!');
-      get().fetchEmprestimos();
-      useLivrosStore.getState().fetchLivros();
-    } catch (error: any) {
-      toast.error('Erro ao cancelar empréstimo: ' + error.message);
+      toast.error('Erro ao devolver livro: ' + error.message);
       throw error;
     }
   }

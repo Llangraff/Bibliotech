@@ -137,8 +137,8 @@ function Users() {
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center">
-                    <Loader className="animate-spin h-8 w-8 text-indigo-600" />
+                  <td colSpan={6} className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50">
+                    <Loader className="h-12 w-12 text-indigo-600 animate-spin" />
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, BookOpen, X } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, BookOpen, X, Loader } from 'lucide-react';
 import { useAutoresStore } from '../store/autoresStore';
 import { useLivrosStore } from '../store/livrosStore';
 import toast from 'react-hot-toast';
@@ -20,7 +20,6 @@ function Authors() {
   const [livrosCount, setLivrosCount] = useState<{ [key: string]: number }>({});
   const [autorNomeSelecionado, setAutorNomeSelecionado] = useState('');
   const [autorQuery, setAutorQuery] = useState('');
-  const [filteredAutores, setFilteredAutores] = useState([]);
 
   useEffect(() => {
     fetchAutores();
@@ -34,14 +33,6 @@ function Authors() {
     }, {});
     setLivrosCount(count);
   }, [livros]);
-
-  useEffect(() => {
-    setFilteredAutores(
-      autores.filter((autor) =>
-        autor.nome.toLowerCase().includes(autorQuery.toLowerCase())
-      )
-    );
-  }, [autorQuery, autores]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -87,12 +78,6 @@ function Authors() {
         toast.error('Erro ao remover autor: ' + error.message);
       }
     }
-  };
-
-  const handleAutorSelect = (autorId: string, autorNome: string) => {
-    setFormData({ ...formData, autorId });
-    setAutorNomeSelecionado(autorNome);
-    setAutorQuery('');
   };
 
   const resetForm = () => {
@@ -142,8 +127,8 @@ function Authors() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50">
+          <Loader className="h-12 w-12 text-indigo-600 animate-spin" />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

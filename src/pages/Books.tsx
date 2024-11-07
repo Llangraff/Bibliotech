@@ -24,6 +24,7 @@ function Books() {
   const [formError, setFormError] = useState('');
   const [autorQuery, setAutorQuery] = useState('');
   const [filteredAutores, setFilteredAutores] = useState<Autor[]>([]);
+  const [autorNomeSelecionado, setAutorNomeSelecionado] = useState('');
 
   useEffect(() => {
     fetchLivros();
@@ -43,8 +44,9 @@ function Books() {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleAutorSelect = (autorId: string) => {
+  const handleAutorSelect = (autorId: string, autorNome: string) => {
     setFormData({ ...formData, autorId });
+    setAutorNomeSelecionado(autorNome);
     setAutorQuery(''); // Limpa o campo de busca após a seleção
   };
 
@@ -84,11 +86,13 @@ function Books() {
       status: 'disponível',
     });
     setLivroSelecionado(null);
+    setAutorNomeSelecionado('');
   };
 
   const handleEdit = (livro: Livro) => {
     setLivroSelecionado(livro);
     setFormData({ ...livro });
+    setAutorNomeSelecionado(autores.find((autor) => autor.id === livro.autorId)?.nome || '');
     setShowAddModal(true);
   };
 
@@ -133,6 +137,7 @@ function Books() {
               status: 'disponível',
             });
             setLivroSelecionado(null);
+            setAutorNomeSelecionado('');
             setShowAddModal(true);
           }}
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700 transition-colors"
@@ -157,8 +162,8 @@ function Books() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-10">
-            <Loader className="animate-spin h-10 w-10 text-indigo-600" />
+          <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50">
+            <Loader className="h-12 w-12 text-indigo-600 animate-spin" />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -259,21 +264,20 @@ function Books() {
                 <input
                   type="text"
                   placeholder="Buscar autor..."
-                  value={autorQuery}
+                  value={autorNomeSelecionado || autorQuery}
                   onChange={(e) => setAutorQuery(e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
                 {autorQuery && (
                   <ul className="border border-gray-300 mt-1 rounded-md bg-white shadow-sm max-h-40 overflow-y-auto">
                     {filteredAutores.map((autor) => (
-                     <li
-                     key={autor.id}
-                     onClick={() => autor.id && handleAutorSelect(autor.id)}
-                     className="p-2 hover:bg-indigo-50 cursor-pointer"
-                   >
-                     {autor.nome}
-                   </li>
-                   
+                      <li
+                        key={autor.id}
+                        onClick={() => autor.id && handleAutorSelect(autor.id, autor.nome)}
+                        className="p-2 hover:bg-indigo-50 cursor-pointer"
+                      >
+                        {autor.nome}
+                      </li>
                     ))}
                   </ul>
                 )}
@@ -336,5 +340,6 @@ function Books() {
     </div>
   );
 }
+
 
 export default Books;
