@@ -18,8 +18,6 @@ function Authors() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
   const [livrosCount, setLivrosCount] = useState<{ [key: string]: number }>({});
-  const [autorNomeSelecionado, setAutorNomeSelecionado] = useState('');
-  const [autorQuery, setAutorQuery] = useState('');
 
   useEffect(() => {
     fetchAutores();
@@ -44,11 +42,19 @@ function Authors() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validating and removing extra whitespace in the author's name
+    const nome = formData.nome.trim();
+    if (!nome) {
+      toast.error('O nome do autor é obrigatório e não pode ser apenas espaços.');
+      return;
+    }
+
     try {
       if (editingAuthor) {
-        await updateAutor(editingAuthor.id, formData, imageFile || undefined);
+        await updateAutor(editingAuthor.id, { ...formData, nome }, imageFile || undefined);
       } else {
-        await addAutor(formData, imageFile || undefined);
+        await addAutor({ ...formData, nome }, imageFile || undefined);
       }
       setShowModal(false);
       resetForm();
@@ -61,7 +67,7 @@ function Authors() {
   const handleEdit = (author: any) => {
     setEditingAuthor(author);
     setFormData({
-      nome: author.nome,
+      nome: author.nome.trim(),
       nacionalidade: author.nacionalidade,
       biografia: author.biografia
     });
@@ -89,7 +95,6 @@ function Authors() {
     setImageFile(null);
     setImagePreview('');
     setEditingAuthor(null);
-    setAutorNomeSelecionado('');
   };
 
   const filteredAuthors = autores.filter(author =>
@@ -145,7 +150,7 @@ function Authors() {
                   ) : (
                     <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
                       <span className="text-indigo-600 font-medium text-lg">
-                        {author.nome.charAt(0)}
+                        {author.nome.trim().charAt(0).toUpperCase()}
                       </span>
                     </div>
                   )}
