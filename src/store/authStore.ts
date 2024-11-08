@@ -19,6 +19,7 @@ interface AuthState {
   signOut: () => Promise<void>;
   signUp: (nome: string, email: string, password: string, tipo?: string) => Promise<void>;
   updateUserData: () => Promise<void>;
+  isAdmin: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -80,6 +81,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const userData = await getDoc(doc(db, 'usuarios', user.uid));
       set({ userData: userData.data() });
     }
+  },
+
+  isAdmin: () => {
+    const { userData } = get();
+    return userData?.tipo === 'admin';
   },
 }));
 

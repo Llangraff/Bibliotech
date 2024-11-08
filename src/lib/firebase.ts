@@ -33,7 +33,7 @@ export interface Livro {
   autorId: string;
   isbn: string;
   categoria: string;
-  status: 'disponível' | 'emprestado';
+  status: 'disponível' | 'emprestado' | 'inativo'; // Adicionado 'inativo' aqui
   imagemUrl?: string;
   quantidadeTotal: number;
   quantidadeDisponivel: number;

@@ -4,6 +4,7 @@ import { useUsuariosStore } from '../store/usuariosStore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { Usuario } from '../lib/firebase'; // Certifique-se de que isso está correto
 
 interface UsuarioForm {
   nome: string;
@@ -43,7 +44,7 @@ function Users() {
         await addUsuario({
           ...formData,
           dataCadastro: new Date()
-        });
+        } as Usuario);
         toast.success('Usuário adicionado com sucesso!');
       }
       setShowModal(false);
@@ -68,8 +69,10 @@ function Users() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
       try {
-        await deleteUsuario(id);
-        toast.success('Usuário excluído com sucesso!');
+        const deleted = await deleteUsuario(id);
+        if (deleted === true) { // Verifique explicitamente se 'deleted' é 'true'
+          toast.success('Usuário excluído com sucesso!');
+        }
       } catch (error) {
         toast.error('Erro ao excluir usuário.');
         console.error('Erro ao excluir usuário:', error);

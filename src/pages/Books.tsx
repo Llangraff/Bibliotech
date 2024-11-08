@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, Loader } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Loader, Slash } from 'lucide-react';
 import { useLivrosStore } from '../store/livrosStore';
 import { useAutoresStore } from '../store/autoresStore';
+import { useEmprestimosStore } from '../store/emprestimosStore';
 import { Livro, Autor } from '../lib/firebase';
 
 function Books() {
-  const { livros, fetchLivros, addLivro, updateLivro, deleteLivro, loading } = useLivrosStore();
+  const { livros, fetchLivros, addLivro, updateLivro, deleteLivro, toggleLivroStatus, loading } = useLivrosStore();
   const { autores, fetchAutores } = useAutoresStore();
+  const { emprestimos } = useEmprestimosStore();
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [formData, setFormData] = useState<Omit<Livro, 'id'>>({
     titulo: '',
@@ -20,7 +23,7 @@ function Books() {
   const [livroSelecionado, setLivroSelecionado] = useState<Livro | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
   const [formError, setFormError] = useState('');
   const [autorQuery, setAutorQuery] = useState('');
   const [filteredAutores, setFilteredAutores] = useState<Autor[]>([]);
@@ -47,7 +50,7 @@ function Books() {
   const handleAutorSelect = (autorId: string, autorNome: string) => {
     setFormData({ ...formData, autorId });
     setAutorNomeSelecionado(autorNome);
-    setAutorQuery(''); // Limpa o campo de busca após a seleção
+    setAutorQuery('');
   };
 
   const isFormValid = () => {
@@ -97,10 +100,21 @@ function Books() {
   };
 
   const handleDelete = (id: string | undefined) => {
-    if (id) {
-      deleteLivro(id);
+    if (!id) return console.error('Erro ao excluir livro: ID inválido.');
+    
+    const isBookOnLoan = emprestimos.some((emprestimo) => emprestimo.livroId === id && emprestimo.status === 'ativo');
+    if (isBookOnLoan) {
+      alert('Este livro possui empréstimos ativos e não pode ser excluído.');
     } else {
-      console.error('Erro ao excluir livro: ID inválido.');
+      deleteLivro(id);
+    }
+  };
+
+  const handleToggleStatus = (livro: Livro) => {
+    if (livro.id) {
+      toggleLivroStatus(livro.id); // Alterna o status entre 'disponível' e 'inativo'
+    } else {
+      console.error('Erro ao alterar status do livro: ID inválido.');
     }
   };
 
@@ -170,30 +184,37 @@ function Books() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Título</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Autor</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ISBN</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantidade Total</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantidade Disponível</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Título</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Autor</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd Total</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd Disp.</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {currentLivros.map((livro) => (
                   <tr key={livro.id || Math.random()} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">{livro.titulo}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">{livro.titulo}</td>
+                    <td className="px-4 py-4 whitespace-nowrap">
                       {autores.find((autor) => autor.id === livro.autorId)?.nome || 'Autor Desconhecido'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">{livro.isbn}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{livro.categoria}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{livro.quantidadeTotal}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{livro.quantidadeDisponivel}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-4 py-4 whitespace-nowrap">{livro.categoria}</td>
+                    <td className="px-4 py-4 whitespace-nowrap">{livro.quantidadeTotal}</td>
+                    <td className="px-4 py-4 whitespace-nowrap">{livro.quantidadeDisponivel}</td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 rounded-full text-xs ${livro.status === 'inativo' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                        {livro.status === 'inativo' ? 'Inativo' : 'Disponível'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex gap-2">
                         <button onClick={() => handleEdit(livro)} className="text-indigo-600 hover:text-indigo-900">
                           <Edit2 className="h-5 w-5" />
+                        </button>
+                        <button onClick={() => handleToggleStatus(livro)} className="text-yellow-600 hover:text-yellow-900">
+                          <Slash className="h-5 w-5" />
                         </button>
                         <button onClick={() => handleDelete(livro.id)} className="text-red-600 hover:text-red-900">
                           <Trash2 className="h-5 w-5" />
@@ -340,6 +361,5 @@ function Books() {
     </div>
   );
 }
-
 
 export default Books;

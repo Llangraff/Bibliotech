@@ -59,6 +59,10 @@ export const useEmprestimosStore = create<EmprestimosState>((set, get) => ({
         throw new Error('Livro não encontrado');
       }
 
+      if (livro.status === 'inativo') {
+        throw new Error('O livro está inativo e não pode ser emprestado');
+      }
+
       if (livro.quantidadeDisponivel <= 0) {
         throw new Error('Não há exemplares disponíveis para empréstimo');
       }
@@ -75,10 +79,14 @@ export const useEmprestimosStore = create<EmprestimosState>((set, get) => ({
       }
 
       // Atualiza a quantidade disponível do livro
-      await updateDoc(doc(db, 'livros', livro.id), {
-        quantidadeDisponivel: livro.quantidadeDisponivel - 1,
-        status: livro.quantidadeDisponivel - 1 === 0 ? 'emprestado' : 'disponível'
-      });
+      if (livro && livro.id) {
+        await updateDoc(doc(db, 'livros', livro.id), {
+          quantidadeDisponivel: livro.quantidadeDisponivel - 1,
+          status: livro.quantidadeDisponivel - 1 === 0 ? 'emprestado' : 'disponível'
+        });
+      } else {
+        throw new Error('ID do livro não encontrado');
+      }
 
       // Cria o empréstimo
       await addDoc(collection(db, 'emprestimos'), {
@@ -119,7 +127,7 @@ export const useEmprestimosStore = create<EmprestimosState>((set, get) => ({
         const livrosStore = useLivrosStore.getState();
         const livro = livrosStore.livros.find(l => l.id === emprestimo.livroId);
         
-        if (livro) {
+        if (livro && livro.id) {
           await updateDoc(doc(db, 'livros', livro.id), {
             quantidadeDisponivel: livro.quantidadeDisponivel + 1,
             status: 'disponível'
@@ -145,7 +153,7 @@ export const useEmprestimosStore = create<EmprestimosState>((set, get) => ({
       const livrosStore = useLivrosStore.getState();
       const livro = livrosStore.livros.find(l => l.id === emprestimo.livroId);
       
-      if (!livro) throw new Error('Livro não encontrado');
+      if (!livro || !livro.id) throw new Error('Livro não encontrado ou ID do livro não definido');
 
       // Atualiza o empréstimo
       await updateDoc(doc(db, 'emprestimos', emprestimoId), {

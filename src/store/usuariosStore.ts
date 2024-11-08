@@ -7,24 +7,25 @@ import {
   updateDoc,
   deleteDoc,
   query,
-  orderBy
+  orderBy,
+  where
 } from 'firebase/firestore';
 import { db, Usuario } from '../lib/firebase';
-import { useAuthStore } from './authStore';
 import toast from 'react-hot-toast';
 
 interface UsuariosState {
   usuarios: Usuario[];
   loading: boolean;
   fetchUsuarios: () => Promise<void>;
-  addUsuario: (usuario: Omit<Usuario, 'id'>) => Promise<void>;
+  addUsuario: (usuario: Omit<Usuario, 'id' | 'dataCadastro'>) => Promise<void>;
   updateUsuario: (id: string, usuario: Partial<Usuario>) => Promise<void>;
-  deleteUsuario: (id: string) => Promise<void>;
+  deleteUsuario: (id: string) => Promise<boolean>; // Modificado para retornar boolean
 }
 
 export const useUsuariosStore = create<UsuariosState>((set, get) => ({
   usuarios: [],
   loading: false,
+
   fetchUsuarios: async () => {
     set({ loading: true });
     try {
@@ -34,7 +35,7 @@ export const useUsuariosStore = create<UsuariosState>((set, get) => ({
       const usuarios = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        dataCadastro: doc.data().dataCadastro?.toDate()
+        dataCadastro: doc.data().dataCadastro?.toDate(),
       })) as Usuario[];
       set({ usuarios });
     } catch (error: any) {
@@ -43,15 +44,13 @@ export const useUsuariosStore = create<UsuariosState>((set, get) => ({
       set({ loading: false });
     }
   },
+
   addUsuario: async (usuario) => {
     try {
-      // Registra o usuário no Authentication e no Firestore
-      await useAuthStore.getState().signUp(
-        usuario.nome,
-        usuario.email,
-        'senha123', // Senha padrão inicial
-        usuario.tipo
-      );
+      await addDoc(collection(db, 'usuarios'), {
+        ...usuario,
+        dataCadastro: new Date(), // Adiciona dataCadastro ao criar o usuário
+      });
       toast.success('Usuário adicionado com sucesso!');
       get().fetchUsuarios();
     } catch (error: any) {
@@ -59,11 +58,12 @@ export const useUsuariosStore = create<UsuariosState>((set, get) => ({
       throw error;
     }
   },
+
   updateUsuario: async (id, usuario) => {
     try {
       await updateDoc(doc(db, 'usuarios', id), {
         ...usuario,
-        dataAtualizacao: new Date()
+        dataAtualizacao: new Date(),
       });
       toast.success('Usuário atualizado com sucesso!');
       get().fetchUsuarios();
@@ -72,14 +72,26 @@ export const useUsuariosStore = create<UsuariosState>((set, get) => ({
       throw error;
     }
   },
+
   deleteUsuario: async (id) => {
     try {
+      // Verifica se o usuário possui empréstimos ativos antes de permitir a exclusão
+      const emprestimosSnapshot = await getDocs(
+        query(collection(db, 'emprestimos'), where('usuarioId', '==', id), where('status', '==', 'ativo'))
+      );
+
+      if (!emprestimosSnapshot.empty) {
+        toast.error('O usuário possui empréstimos ativos e não pode ser excluído.');
+        return false; // Retorna false se o usuário não puder ser excluído
+      }
+
       await deleteDoc(doc(db, 'usuarios', id));
       toast.success('Usuário removido com sucesso!');
       get().fetchUsuarios();
+      return true; // Retorna true se a exclusão foi bem-sucedida
     } catch (error: any) {
       toast.error('Erro ao remover usuário: ' + error.message);
       throw error;
     }
-  }
+  },
 }));
