@@ -43,7 +43,7 @@ function Loans() {
         livroId: livroSelecionado,
         usuarioId: usuarioSelecionado,
         dataDevolucaoPrevista: new Date(dataDevolucao),
-        dataEmprestimo: new Date(), // Adiciona a data do empréstimo atual
+        dataEmprestimo: new Date(),
         status: 'ativo'
       });
       setShowModal(false);
@@ -70,7 +70,7 @@ function Loans() {
     }
     setLivroQuery('');
   };
-  
+
   const handleUsuarioSelect = (id: string | undefined, nome: string | undefined) => {
     if (id && nome) {
       setUsuarioSelecionado(id);
@@ -96,17 +96,17 @@ function Loans() {
     currentPage * itemsPerPage
   );
 
-  const getStatusBadgeClass = (status: string, dataDevolucaoPrevista: Date) => {
+  const getStatusBadgeClass = (status: string, dataDevolucaoPrevista?: Date) => {
     if (status === 'devolvido') return 'bg-green-100 text-green-800';
-    if (status === 'ativo' && isAfter(new Date(), dataDevolucaoPrevista)) {
+    if (status === 'ativo' && dataDevolucaoPrevista && isAfter(new Date(), dataDevolucaoPrevista)) {
       return 'bg-red-100 text-red-800';
     }
     return 'bg-yellow-100 text-yellow-800';
   };
 
-  const getStatusText = (status: string, dataDevolucaoPrevista: Date) => {
+  const getStatusText = (status: string, dataDevolucaoPrevista?: Date) => {
     if (status === 'devolvido') return 'Devolvido';
-    if (status === 'ativo' && isAfter(new Date(), dataDevolucaoPrevista)) {
+    if (status === 'ativo' && dataDevolucaoPrevista && isAfter(new Date(), dataDevolucaoPrevista)) {
       return 'Atrasado';
     }
     return 'Ativo';
@@ -189,10 +189,10 @@ function Loans() {
                         <div className="text-sm text-gray-900">{usuario?.nome}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {format(emprestimo.dataEmprestimo, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                        {emprestimo.dataEmprestimo ? format(emprestimo.dataEmprestimo, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {format(emprestimo.dataDevolucaoPrevista, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                        {emprestimo.dataDevolucaoPrevista ? format(emprestimo.dataDevolucaoPrevista, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${

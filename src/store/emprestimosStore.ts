@@ -7,9 +7,7 @@ import {
   updateDoc,
   deleteDoc,
   query,
-  orderBy,
-  where
-} from 'firebase/firestore';
+  orderBy} from 'firebase/firestore';
 import { db, Emprestimo } from '../lib/firebase';
 import { useLivrosStore } from './livrosStore';
 import toast from 'react-hot-toast';
@@ -36,7 +34,7 @@ export const useEmprestimosStore = create<EmprestimosState>((set, get) => ({
       );
       const emprestimos = querySnapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data(),
+        ...(doc.data() as Omit<Emprestimo, 'id'>), // Casting para o tipo Emprestimo, exceto o id
         dataEmprestimo: doc.data().dataEmprestimo?.toDate(),
         dataDevolucaoPrevista: doc.data().dataDevolucaoPrevista?.toDate(),
         dataDevolucaoEfetiva: doc.data().dataDevolucaoEfetiva?.toDate()

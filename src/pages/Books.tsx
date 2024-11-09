@@ -4,11 +4,13 @@ import { useLivrosStore } from '../store/livrosStore';
 import { useAutoresStore } from '../store/autoresStore';
 import { useEmprestimosStore } from '../store/emprestimosStore';
 import { Livro, Autor } from '../lib/firebase';
+import { useAuthStore } from '../store/authStore';
 
 function Books() {
   const { livros, fetchLivros, addLivro, updateLivro, deleteLivro, toggleLivroStatus, loading } = useLivrosStore();
   const { autores, fetchAutores } = useAutoresStore();
   const { emprestimos } = useEmprestimosStore();
+  const { isAdmin } = useAuthStore();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [formData, setFormData] = useState<Omit<Livro, 'id'>>({
@@ -72,7 +74,7 @@ function Books() {
 
     const quantidadeDisponivel = formData.quantidadeTotal;
 
-    if (livroSelecionado && livroSelecionado.id) {
+    if (livroSelecionado && livroSelecionado.id && isAdmin()) {
       updateLivro(livroSelecionado.id, { ...formData, quantidadeDisponivel });
     } else {
       addLivro({ ...formData, quantidadeDisponivel });
@@ -93,28 +95,36 @@ function Books() {
   };
 
   const handleEdit = (livro: Livro) => {
-    setLivroSelecionado(livro);
-    setFormData({ ...livro });
-    setAutorNomeSelecionado(autores.find((autor) => autor.id === livro.autorId)?.nome || '');
-    setShowAddModal(true);
-  };
-
-  const handleDelete = (id: string | undefined) => {
-    if (!id) return console.error('Erro ao excluir livro: ID inválido.');
-    
-    const isBookOnLoan = emprestimos.some((emprestimo) => emprestimo.livroId === id && emprestimo.status === 'ativo');
-    if (isBookOnLoan) {
-      alert('Este livro possui empréstimos ativos e não pode ser excluído.');
+    if (isAdmin()) {
+      setLivroSelecionado(livro);
+      setFormData({ ...livro });
+      setAutorNomeSelecionado(autores.find((autor) => autor.id === livro.autorId)?.nome || '');
+      setShowAddModal(true);
     } else {
-      deleteLivro(id);
+      alert("Apenas administradores podem editar livros.");
     }
   };
 
-  const handleToggleStatus = (livro: Livro) => {
-    if (livro.id) {
-      toggleLivroStatus(livro.id); // Alterna o status entre 'disponível' e 'inativo'
+  function handleDelete(id: string | undefined) {
+    if (!id) return console.error('Erro ao excluir livro: ID inválido.');
+
+    if (isAdmin()) {
+      const isBookOnLoan = emprestimos.some((emprestimo) => emprestimo.livroId === id && emprestimo.status === 'ativo');
+      if (isBookOnLoan) {
+        alert('Este livro possui empréstimos ativos e não pode ser excluído.');
+      } else {
+        deleteLivro(id);
+      }
     } else {
-      console.error('Erro ao alterar status do livro: ID inválido.');
+      alert("Apenas administradores podem excluir livros.");
+    }
+  }
+
+  const handleToggleStatus = (livro: Livro) => {
+    if (livro.id && isAdmin()) {
+      toggleLivroStatus(livro.id);
+    } else {
+      alert("Apenas administradores podem alterar o status dos livros.");
     }
   };
 
@@ -210,15 +220,19 @@ function Books() {
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex gap-2">
-                        <button onClick={() => handleEdit(livro)} className="text-indigo-600 hover:text-indigo-900">
-                          <Edit2 className="h-5 w-5" />
-                        </button>
-                        <button onClick={() => handleToggleStatus(livro)} className="text-yellow-600 hover:text-yellow-900">
-                          <Slash className="h-5 w-5" />
-                        </button>
-                        <button onClick={() => handleDelete(livro.id)} className="text-red-600 hover:text-red-900">
-                          <Trash2 className="h-5 w-5" />
-                        </button>
+                        {isAdmin() && (
+                          <>
+                            <button onClick={() => handleEdit(livro)} className="text-indigo-600 hover:text-indigo-900">
+                              <Edit2 className="h-5 w-5" />
+                            </button>
+                            <button onClick={() => handleToggleStatus(livro)} className="text-yellow-600 hover:text-yellow-900">
+                              <Slash className="h-5 w-5" />
+                            </button>
+                            <button onClick={() => handleDelete(livro.id)} className="text-red-600 hover:text-red-900">
+                              <Trash2 className="h-5 w-5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -51,7 +51,7 @@ export const useUsuariosStore = create<UsuariosState>((set, get) => ({
         ...usuario,
         dataCadastro: new Date(), // Adiciona dataCadastro ao criar o usuário
       });
-      toast.success('Usuário adicionado com sucesso!');
+    
       get().fetchUsuarios();
     } catch (error: any) {
       toast.error('Erro ao adicionar usuário: ' + error.message);
@@ -86,8 +86,7 @@ export const useUsuariosStore = create<UsuariosState>((set, get) => ({
       }
 
       await deleteDoc(doc(db, 'usuarios', id));
-      toast.success('Usuário removido com sucesso!');
-      get().fetchUsuarios();
+      get().fetchUsuarios(); // Atualiza a lista de usuários após a exclusão
       return true; // Retorna true se a exclusão foi bem-sucedida
     } catch (error: any) {
       toast.error('Erro ao remover usuário: ' + error.message);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, BookOpen, X, Loader } from 'lucide-react';
 import { useAutoresStore } from '../store/autoresStore';
 import { useLivrosStore } from '../store/livrosStore';
+import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 
 function Authors() {
@@ -10,6 +11,7 @@ function Authors() {
   const [searchTerm, setSearchTerm] = useState('');
   const { autores, loading, fetchAutores, addAutor, updateAutor, deleteAutor } = useAutoresStore();
   const { livros, fetchLivros } = useLivrosStore();
+  const { isAdmin } = useAuthStore();
   const [formData, setFormData] = useState({
     nome: '',
     nacionalidade: '',
@@ -43,7 +45,6 @@ function Authors() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validating and removing extra whitespace in the author's name
     const nome = formData.nome.trim();
     if (!nome) {
       toast.error('O nome do autor é obrigatório e não pode ser apenas espaços.');
@@ -65,26 +66,32 @@ function Authors() {
   };
 
   const handleEdit = (author: any) => {
-    setEditingAuthor(author);
-    setFormData({
-      nome: author.nome.trim(),
-      nacionalidade: author.nacionalidade,
-      biografia: author.biografia
-    });
-    setImagePreview(author.imagemUrl || '');
-    setShowModal(true);
+    if (isAdmin()) {
+      setEditingAuthor(author);
+      setFormData({
+        nome: author.nome.trim(),
+        nacionalidade: author.nacionalidade,
+        biografia: author.biografia
+      });
+      setImagePreview(author.imagemUrl || '');
+      setShowModal(true);
+    } else {
+      toast.error('Apenas administradores podem editar autores.');
+    }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este autor?')) {
+  async function handleDelete(id: string) {
+    if (isAdmin() && window.confirm('Tem certeza que deseja excluir este autor?')) {
       try {
         await deleteAutor(id);
         toast.success('Autor removido com sucesso!');
       } catch (error: any) {
         toast.error('Erro ao remover autor: ' + error.message);
       }
+    } else {
+      toast.error('Apenas administradores podem excluir autores.');
     }
-  };
+  }
 
   const resetForm = () => {
     setFormData({
@@ -159,20 +166,22 @@ function Authors() {
                     <p className="text-sm text-gray-500">{author.nacionalidade}</p>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEdit(author)}
-                    className="text-indigo-600 hover:text-indigo-900"
-                  >
-                    <Edit2 className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => author.id ? handleDelete(author.id) : console.error('ID do autor está indefinido')}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
-                </div>
+                {isAdmin() && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEdit(author)}
+                      className="text-indigo-600 hover:text-indigo-900"
+                    >
+                      <Edit2 className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => author.id ? handleDelete(author.id) : console.error('ID do autor está indefinido')}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <p className="text-sm text-gray-600 mb-4 line-clamp-3">

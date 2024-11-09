@@ -4,7 +4,9 @@ import { useUsuariosStore } from '../store/usuariosStore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
-import { Usuario } from '../lib/firebase'; // Certifique-se de que isso está correto
+import { useAuthStore } from '../store/authStore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 interface UsuarioForm {
   nome: string;
@@ -18,6 +20,7 @@ function Users() {
   const [editingUser, setEditingUser] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { usuarios, loading, fetchUsuarios, addUsuario, updateUsuario, deleteUsuario } = useUsuariosStore();
+  const { isAdmin } = useAuthStore();
   const [formData, setFormData] = useState<UsuarioForm>({
     nome: '',
     email: '',
@@ -42,9 +45,8 @@ function Users() {
         toast.success('Usuário atualizado com sucesso!');
       } else {
         await addUsuario({
-          ...formData,
-          dataCadastro: new Date()
-        } as Usuario);
+          ...formData
+        });
         toast.success('Usuário adicionado com sucesso!');
       }
       setShowModal(false);
@@ -66,19 +68,28 @@ function Users() {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
+  async function handleDelete(id: string) {
     if (window.confirm('Tem certeza que deseja excluir este usuário?')) {
       try {
-        const deleted = await deleteUsuario(id);
-        if (deleted === true) { // Verifique explicitamente se 'deleted' é 'true'
-          toast.success('Usuário excluído com sucesso!');
+        // Verifica se o usuário possui empréstimos ativos antes de permitir a exclusão
+        const emprestimosSnapshot = await getDocs(
+          query(collection(db, 'emprestimos'), where('usuarioId', '==', id), where('status', '==', 'ativo'))
+        );
+
+        if (!emprestimosSnapshot.empty) {
+          toast.error('O usuário possui empréstimos ativos e não pode ser excluído.');
+          return; // Sai da função se o usuário tiver empréstimos ativos
         }
+
+        // Se não houver empréstimos ativos, permite a exclusão
+        await deleteUsuario(id);
+        toast.success('Usuário excluído com sucesso!');
       } catch (error) {
         toast.error('Erro ao excluir usuário.');
         console.error('Erro ao excluir usuário:', error);
       }
     }
-  };
+  }
 
   const resetForm = () => {
     setFormData({
@@ -134,7 +145,7 @@ function Users() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Cadastro</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                {isAdmin() && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -185,22 +196,24 @@ function Users() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {user.dataCadastro ? format(new Date(user.dataCadastro), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'N/A'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(user)}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          <Edit2 className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={() => user.id && handleDelete(user.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </td>
+                    {isAdmin() && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEdit(user)}
+                            className="text-indigo-600 hover:text-indigo-900"
+                          >
+                            <Edit2 className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => user.id && handleDelete(user.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
