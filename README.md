@@ -3,15 +3,15 @@
 Bem-vindo ao **Bibliotech**, um sistema de gerenciamento de bibliotecas desenvolvido para facilitar a administração de livros, autores, usuários e empréstimos. Este projeto foi criado como Trabalho de Conclusão de Curso (TCC), com o objetivo de proporcionar uma interface intuitiva e funcionalidades essenciais para o gerenciamento eficiente de uma biblioteca.
 
 ## 📖 Índice
-- [Sobre o Projeto](#sobre-o-projeto)
-- [Funcionalidades](#funcionalidades)
-- [Tecnologias Utilizadas](#tecnologias-utilizadas)
-- [Pré-requisitos](#pré-requisitos)
-- [Instalação](#instalação)
-- [Uso](#uso)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Contribuição](#contribuição)
-- [Licença](#licença)
+- [Sobre o Projeto](#-sobre-o-projeto)
+- [Funcionalidades](#-funcionalidades)
+- [Tecnologias Utilizadas](#-tecnologias-utilizadas)
+- [Pré-requisitos](#-pré-requisitos)
+- [Instalação](#-instalação)
+- [Uso](#-uso)
+- [Estrutura do Projeto](#-estrutura-do-projeto)
+- [Contribuição](#-contribuição)
+- [Licença](#-licença)
 
 ## 🌟 Sobre o Projeto
 O **Bibliotech** foi desenvolvido para ajudar bibliotecas na organização de seus acervos e na gestão de empréstimos e devoluções de livros. O sistema permite que administradores tenham controle total sobre os registros e usuários, enquanto usuários comuns podem buscar livros e solicitar empréstimos.
@@ -40,9 +40,9 @@ O **Bibliotech** foi desenvolvido para ajudar bibliotecas na organização de se
 
 ## 🛠 Tecnologias Utilizadas
 
-- **Frontend**: HTML, CSS, JavaScript
-- **Backend**: Firebase Authentication e Firestore
-- **Outros**: React, TypeScript, SQL para consultas e relatórios
+- **Firebase Authentication** e **Firestore** para autenticação e banco de dados
+- **React** e **TypeScript** para desenvolvimento da interface e funcionalidades
+- **SQL** para consultas e relatórios
 
 ## 📝 Pré-requisitos
 
@@ -99,7 +99,7 @@ Siga o passo a passo abaixo para rodar o projeto localmente.
 - **Administradores**: Podem fazer login e acessar todas as funcionalidades do sistema, incluindo o gerenciamento de usuários, livros e empréstimos.
 - **Usuários Regulares**: Podem se autenticar, visualizar o catálogo de livros e solicitar empréstimos.
 
-Para mais detalhes, veja a [documentação da interface](#estrutura-do-projeto).
+Para mais detalhes, veja a [documentação da interface](#-estrutura-do-projeto).
 
 ## 📂 Estrutura do Projeto
 
@@ -118,6 +118,7 @@ Bibliotech/
 ├── package.json            # Dependências e scripts do projeto
 └── README.md               # Documentação do projeto
 ```
+## 🤝 Contribuição
 🤝 Contribuição
 Contribuições são bem-vindas! Para contribuir com o projeto:
 
