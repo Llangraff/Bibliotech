@@ -117,6 +117,7 @@ Bibliotech/
 ├── .env                    # Variáveis de ambiente do Firebase
 ├── package.json            # Dependências e scripts do projeto
 └── README.md               # Documentação do projeto
+```
 🤝 Contribuição
 Contribuições são bem-vindas! Para contribuir com o projeto:
 
@@ -127,4 +128,3 @@ Faça o push para a branch: git push origin minha-feature.
 Abra um Pull Request para revisão.
 📜 Licença
 Este projeto está sob a licença MIT. Consulte o arquivo LICENSE para mais detalhes.
-
