@@ -1,7 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, getDocs, collection, addDoc, orderBy, query, deleteDoc } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import toast from 'react-hot-toast';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDRlTBDL6Knmd3-oFB_QCwiStt1_XhDRj0",
@@ -60,6 +61,20 @@ export interface Emprestimo {
   status: 'ativo' | 'devolvido';
 }
 
+// Interface para backup
+export interface Backup {
+  id?: string;
+  timestamp: Date;
+  data: {
+    usuarios: Usuario[];
+    livros: Livro[];
+    autores: Autor[];
+    emprestimos: Emprestimo[];
+  };
+  createdBy: string;
+  fileName: string;
+}
+
 // Função para verificar e armazenar o tipo de usuário no Firestore
 export const storeUserData = async (userId: string, nome: string, email: string, tipo: 'admin' | 'usuario') => {
   const userDocRef = doc(db, 'usuarios', userId);
@@ -97,3 +112,61 @@ export const onAuthChange = (callback: (user: Usuario | null) => void) => {
     }
   });
 };
+
+// Função de backup para exportar dados do Firestore para JSON
+export async function backupFirestoreData(userId: string) {
+  try {
+    // Coleções principais para o backup
+    const collections = ['usuarios', 'livros', 'emprestimos', 'autores'];
+    const backupData: any = { usuarios: [], livros: [], emprestimos: [], autores: [] };
+
+    for (const collectionName of collections) {
+      const snapshot = await getDocs(collection(db, collectionName));
+      backupData[collectionName] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    // Estrutura do backup
+    const backup: Backup = {
+      timestamp: new Date(),
+      data: backupData,
+      createdBy: userId,
+      fileName: `backup_${new Date().toISOString().split('T')[0]}.json`
+    };
+
+    // Salvar backup no Firestore
+    await addDoc(collection(db, 'backups'), backup);
+    toast.success('Backup criado com sucesso!');
+  } catch (error: any) {
+    toast.error('Erro ao criar backup: ' + error.message);
+  }
+}
+
+// Função para baixar o backup como JSON
+export function downloadBackup(backup: Backup) {
+  const dataStr = JSON.stringify(backup.data, null, 2);
+  const dataBlob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(dataBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = backup.fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+// Função para buscar todos os backups
+export async function fetchBackups() {
+  const querySnapshot = await getDocs(query(collection(db, 'backups'), orderBy('timestamp', 'desc')));
+  return querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+    timestamp: doc.data().timestamp?.toDate()
+  })) as Backup[];
+}
+
+// Função para excluir backup
+export async function deleteBackup(id: string) {
+  await deleteDoc(doc(db, 'backups', id));
+  toast.success('Backup excluído com sucesso!');
+}

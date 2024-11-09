@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Library, BookOpen, Users, PenTool, CalendarClock, LayoutDashboard, LogOut } from 'lucide-react';
+import { Library, BookOpen, Users, PenTool, CalendarClock, LayoutDashboard, LogOut, Archive } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 function Layout() {
@@ -65,6 +65,15 @@ function Layout() {
           }>
             <CalendarClock className="h-5 w-5" />
             Empréstimos
+          </NavLink>
+          {/* Novo link para Backups */}
+          <NavLink to="/backups" className={({ isActive }) => 
+            `flex items-center gap-2 p-2 rounded-lg transition-colors ${
+              isActive ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600 hover:bg-gray-50'
+            }`
+          }>
+            <Archive className="h-5 w-5" />
+            Backups
           </NavLink>
           {/* Botão de Logout */}
           <button

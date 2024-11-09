@@ -8,6 +8,7 @@ import Books from './pages/Books';
 import Users from './pages/Users';
 import Authors from './pages/Authors';
 import Loans from './pages/Loans';
+import Backups from './pages/Backups'; // Importe o novo componente de Backups
 import PrivateRoute from './components/PrivateRoute';
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
           <Route path="users" element={<Users />} />
           <Route path="authors" element={<Authors />} />
           <Route path="loans" element={<Loans />} />
+          <Route path="backups" element={<Backups />} /> {/* Adicione esta linha para a rota de Backups */}
         </Route>
       </Routes>
     </BrowserRouter>
