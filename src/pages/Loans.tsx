@@ -3,6 +3,7 @@ import { Plus, Search, CheckCircle, XCircle, Loader } from 'lucide-react';
 import { useEmprestimosStore } from '../store/emprestimosStore';
 import { useLivrosStore } from '../store/livrosStore';
 import { useUsuariosStore } from '../store/usuariosStore';
+import { useAuthStore } from '../store/authStore';
 import { format, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
@@ -24,6 +25,7 @@ function Loans() {
   const { emprestimos, loading, fetchEmprestimos, addEmprestimo, devolverLivro, deleteEmprestimo } = useEmprestimosStore();
   const { livros, fetchLivros } = useLivrosStore();
   const { usuarios, fetchUsuarios } = useUsuariosStore();
+  const { user, isAdmin } = useAuthStore();
 
   useEffect(() => {
     fetchEmprestimos();
@@ -165,60 +167,40 @@ function Loans() {
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50">
-                    <Loader className="h-12 w-12 text-indigo-600 animate-spin" />
-                  </td>
+                  <td colSpan={6} className="text-center py-4">Carregando...</td>
                 </tr>
               ) : currentEmprestimos.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                    Nenhum empréstimo encontrado
-                  </td>
+                  <td colSpan={6} className="text-center py-4">Nenhum empréstimo encontrado</td>
                 </tr>
               ) : (
                 currentEmprestimos.map((emprestimo) => {
                   const livro = livros.find(l => l.id === emprestimo.livroId);
                   const usuario = usuarios.find(u => u.id === emprestimo.usuarioId);
-                  
+
                   return (
                     <tr key={emprestimo.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">{livro?.titulo}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{usuario?.nome}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{emprestimo.dataEmprestimo ? format(emprestimo.dataEmprestimo, "dd/MM/yyyy", { locale: ptBR }) : 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{emprestimo.dataDevolucaoPrevista ? format(emprestimo.dataDevolucaoPrevista, "dd/MM/yyyy", { locale: ptBR }) : 'N/A'}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{livro?.titulo}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{usuario?.nome}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {emprestimo.dataEmprestimo ? format(emprestimo.dataEmprestimo, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {emprestimo.dataDevolucaoPrevista ? format(emprestimo.dataDevolucaoPrevista, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          getStatusBadgeClass(emprestimo.status, emprestimo.dataDevolucaoPrevista)
-                        }`}>
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(emprestimo.status, emprestimo.dataDevolucaoPrevista)}`}>
                           {getStatusText(emprestimo.status, emprestimo.dataDevolucaoPrevista)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex gap-2">
                           {emprestimo.status === 'ativo' && (
-                            <button
-                              onClick={() => emprestimo.id && devolverLivro(emprestimo.id)}
-                              className="text-green-600 hover:text-green-900"
-                              title="Devolver"
-                            >
+                            <button onClick={() => emprestimo.id && devolverLivro(emprestimo.id)} className="text-green-600 hover:text-green-900" title="Devolver">
                               <CheckCircle className="h-5 w-5" />
                             </button>
                           )}
-                          <button
-                            onClick={() => emprestimo.id && deleteEmprestimo(emprestimo.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Excluir"
-                          >
-                            <XCircle className="h-5 w-5" />
-                          </button>
+                          {isAdmin() && (
+                            <button onClick={() => emprestimo.id && deleteEmprestimo(emprestimo.id)} className="text-red-600 hover:text-red-900" title="Excluir">
+                              <XCircle className="h-5 w-5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
