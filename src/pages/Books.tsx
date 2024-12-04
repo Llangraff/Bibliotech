@@ -5,6 +5,7 @@ import { useAutoresStore } from '../store/autoresStore';
 import { useEmprestimosStore } from '../store/emprestimosStore';
 import { Livro, Autor } from '../lib/firebase';
 import { useAuthStore } from '../store/authStore';
+import toast from 'react-hot-toast';
 
 function Books() {
   const { livros, fetchLivros, addLivro, updateLivro, deleteLivro, toggleLivroStatus, loading } = useLivrosStore();
@@ -44,9 +45,23 @@ function Books() {
     );
   }, [autorQuery, autores]);
 
+  // Função para formatar o ISBN no formato: 978-3-16-148410-0
+  const formatISBN = (value: string) => {
+    const digits = value.replace(/\D/g, ''); // Remove todos os caracteres não numéricos
+    if (digits.length <= 13) {
+      return digits.replace(/(\d{3})(\d{1})(\d{3})(\d{5})(\d{1})/, '$1-$2-$3-$4-$5');
+    }
+    return digits;
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    if (name === 'isbn') {
+      // Formatar ISBN automaticamente
+      setFormData({ ...formData, [name]: formatISBN(value) });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleAutorSelect = (autorId: string, autorNome: string) => {
@@ -111,7 +126,8 @@ function Books() {
     if (isAdmin()) {
       const isBookOnLoan = emprestimos.some((emprestimo) => emprestimo.livroId === id && emprestimo.status === 'ativo');
       if (isBookOnLoan) {
-        alert('Este livro possui empréstimos ativos e não pode ser excluído.');
+        // Notificação para informar que o livro não pode ser excluído
+        toast.error('Este livro possui empréstimos ativos e não pode ser excluído.');
       } else {
         deleteLivro(id);
       }
